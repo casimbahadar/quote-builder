@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-aFpzoT+QYqAiekFeMM6PHI2VsHh/CilmcaMIOAUKrlQ='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Job quote builder demo | Casim Bahadar</title>
+<meta name="description" content="Build a job quote for a made-up plumbing company: price list items, 13% HST, deposit and expiry date, printable as a PDF, with a message draft and spreadsheet rows. Runs in your browser.">
+<meta name="theme-color" content="#F7F5FB">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect x=%275%27 y=%271%27 width=%2710%27 height=%2710%27 rx=%272%27 fill=%27%23A993E4%27/%3E%3Crect x=%271%27 y=%275%27 width=%2710%27 height=%2710%27 rx=%272%27 fill=%27%235A3DB8%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400..900&display=swap">
+<style>
+
+
+/* Tokens. Spacing sits on a 4px scale, radii on three sizes. */
+:root {
+  --paper: #F7F5FB; --mist: #EDE8F7; --lav: #D8CCF3; --violet: #5A3DB8; --violet-deep: #432C93;
+  --ink: #221B35; --slate: #5F5873; --line: #DDD5EE; --error: #A32A3C; --error-bg: #FBEAEE; --changed-bg: #FFF6DB;
+  --s1: 0.25rem; --s2: 0.5rem; --s3: 0.75rem; --s4: 1rem; --s6: 1.5rem; --s8: 2rem; --s12: 3rem; --s16: 4rem;
+  --r-sm: 4px; --r-md: 12px; --r-pill: 999px;
+  --gutter: var(--s4);
+  --font: "Schibsted Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  color-scheme: light;
+}
+@media (min-width: 40rem) { :root { --gutter: var(--s8); } }
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font);
+  font-size: 1rem; line-height: 1.6; -webkit-font-smoothing: antialiased;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+@media (min-width: 40rem) { body { font-size: 1.0625rem; } }
+h1, h2, h3, h4 { margin: 0 0 var(--s3); line-height: 1.15; letter-spacing: -0.02em; text-wrap: balance; }
+h1 { font-size: clamp(2rem, 1.4rem + 3vw, 3.2rem); font-weight: 850; letter-spacing: -0.035em; margin-bottom: var(--s4); }
+h2 { font-size: clamp(1.4rem, 1.1rem + 1.2vw, 1.9rem); font-weight: 800; margin: 0; }
+h3 { font-size: 1.2rem; font-weight: 750; margin-top: var(--s12); }
+h4 { font-size: 1.05rem; font-weight: 750; margin-bottom: var(--s1); }
+p { margin: 0 0 var(--s4); max-width: 64ch; }
+a { color: var(--violet); text-decoration-thickness: 1.5px; text-underline-offset: 0.2em; }
+@media (hover: hover) { a:hover { color: var(--violet-deep); } }
+:focus-visible { outline: 3px solid var(--violet); outline-offset: 3px; border-radius: var(--r-sm); }
+.wrap { max-width: 62rem; margin-inline: auto; padding-inline: var(--gutter); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+.topbar { border-bottom: 1px solid var(--line); }
+.topbar .wrap { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); flex-wrap: wrap; padding-block: var(--s4); }
+.wordmark { display: inline-flex; align-items: center; gap: var(--s3); min-height: 2.75rem; color: var(--ink); font-weight: 800; letter-spacing: -0.02em; text-decoration: none; }
+.mark { width: 1rem; height: 1rem; border-radius: var(--r-sm); background: var(--violet); box-shadow: 4px -4px 0 -1px #A993E4; margin-top: var(--s1); }
+.demo-flag { font-size: 0.9375rem; font-weight: 650; color: var(--slate); }
+
+.intro { padding-block: var(--s8) var(--s6); }
+.lede { font-size: 1.125rem; }
+.privacy { max-width: 44rem; margin: 0; padding: var(--s4); background: var(--mist); border-radius: var(--r-md); }
+.privacy p { margin: 0; }
+.privacy strong { font-weight: 750; }
+
+.step { padding-block: var(--s8); border-top: 1px solid var(--line); }
+.step-head { display: flex; align-items: center; gap: var(--s3); margin-bottom: var(--s4); }
+.step-num { flex: none; display: inline-grid; place-items: center; width: 2rem; height: 2rem; border-radius: var(--r-pill); background: var(--ink); color: var(--paper); font-weight: 800; font-size: 1rem; }
+.muted { color: var(--slate); }
+.small { font-size: 0.9375rem; }
+
+/* One button system. Groups decide width: full width stacked on phones, equal widths in a row. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; text-align: center;
+  min-height: 3rem; padding: var(--s3) var(--s6);
+  border: 2px solid transparent; border-radius: var(--r-pill);
+  font: inherit; font-size: 1rem; font-weight: 650; line-height: 1.2; text-decoration: none; cursor: pointer;
+}
+.btn-primary { background: var(--violet); color: #fff; }
+.btn-quiet { border-color: var(--ink); color: var(--ink); background: transparent; }
+@media (hover: hover) {
+  .btn-primary:hover { background: var(--violet-deep); color: #fff; }
+  .btn-quiet:hover { background: var(--ink); color: var(--paper); }
+}
+.btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+.actions { display: flex; flex-direction: column; gap: var(--s3); margin-block: var(--s4); }
+.actions > .btn { width: 100%; }
+@media (min-width: 40rem) {
+  .actions { flex-direction: row; flex-wrap: wrap; }
+  .actions > .btn { flex: 1 1 0; width: auto; max-width: 16rem; }
+}
+
+details { margin-top: var(--s4); }
+summary { cursor: pointer; font-weight: 650; color: var(--violet); min-height: 2.75rem; display: flex; align-items: center; }
+textarea { width: 100%; min-height: 10rem; font: 1rem/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; padding: var(--s3); border: 1.5px solid var(--slate); border-radius: var(--r-md); background: #fff; color: var(--ink); }
+label.block { display: block; font-weight: 650; margin-bottom: var(--s2); }
+select { font: inherit; font-size: 1rem; min-height: 2.75rem; padding: var(--s1) var(--s2); border: 1.5px solid var(--slate); border-radius: var(--r-md); background: #fff; color: var(--ink); max-width: 100%; }
+input[type="checkbox"], input[type="radio"] { width: 1.25rem; height: 1.25rem; accent-color: var(--violet); margin: 0; flex: none; }
+
+.status { font-weight: 650; margin: var(--s3) 0 0; }
+.alert { margin-top: var(--s4); padding: var(--s3) var(--s4); border-radius: var(--r-md); background: var(--error-bg); color: var(--error); font-weight: 650; border: 1.5px solid var(--error); }
+.info { margin-top: var(--s4); padding: var(--s3) var(--s4); border-radius: var(--r-md); background: var(--mist); }
+.alert:empty, .info:empty { display: none; }
+.stale { margin: 0 0 var(--s6); padding: var(--s3) var(--s4); border-radius: var(--r-md); background: var(--changed-bg); border: 1.5px solid #8A6A12; font-weight: 650; }
+
+.scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--line); border-radius: var(--r-md); background: #fff; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9375rem; }
+th, td { text-align: left; padding: var(--s3) var(--s4); border-bottom: 1px solid var(--line); vertical-align: top; }
+th { background: var(--mist); font-weight: 700; white-space: nowrap; }
+tr:last-child td, tr:last-child th { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.check { display: flex; align-items: center; gap: var(--s2); min-height: 2.75rem; cursor: pointer; }
+.map-table td { vertical-align: middle; }
+.ws { display: inline-block; min-width: 0.6em; color: var(--violet); font-weight: 700; }
+.empty-val { color: var(--slate); font-style: italic; }
+
+fieldset { border: 0; padding: 0; margin: var(--s6) 0 0; }
+legend { font-weight: 700; margin-bottom: var(--s2); padding: 0; }
+.radio { display: flex; align-items: center; gap: var(--s3); min-height: 2.75rem; }
+
+.summary-line { font-size: 1.125rem; font-weight: 600; max-width: 60ch; }
+.summary-line b { font-weight: 850; }
+.jump { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); margin: 0; padding: 0; list-style: none; }
+.jump a { display: inline-flex; align-items: center; min-height: 2.75rem; font-weight: 650; }
+
+.cellmap { margin: 0; }
+.cellmap svg { display: block; max-width: 100%; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s6); margin: var(--s3) 0 0; padding: 0; list-style: none; font-size: 0.9375rem; }
+.legend li { display: flex; align-items: center; gap: var(--s2); }
+.sw { width: 1rem; height: 1rem; border-radius: var(--r-sm); display: inline-block; }
+.sw-same { background: var(--line); }
+.sw-changed { background: var(--violet); }
+.sw-flag { background: var(--error); background-image: repeating-linear-gradient(45deg, transparent 0 2px, rgba(255,255,255,.55) 2px 4px); }
+figcaption { font-size: 0.9375rem; color: var(--slate); margin-top: var(--s2); }
+
+.charts { display: grid; gap: 0 var(--s12); }
+.charts > div { min-width: 0; }
+@media (min-width: 52rem) { .charts { grid-template-columns: 1fr 1fr; } }
+.bars { display: grid; gap: var(--s3); max-width: 40rem; }
+.bar-row { display: grid; grid-template-columns: 1fr 2.5rem; align-items: center; gap: var(--s1) var(--s3); font-size: 0.9375rem; }
+.bar-row .bar-track { grid-column: 1 / -1; grid-row: 2; }
+.bar-track { display: block; height: 1rem; background: var(--mist); border-radius: var(--r-pill); overflow: hidden; }
+.bar-fill { display: block; height: 100%; background: var(--violet); border-radius: var(--r-pill); }
+.bars.problems .bar-fill { background: var(--error); }
+.bar-row .n { font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
+
+.pairs { display: grid; gap: var(--s4); }
+.pair { min-width: 0; border: 1.5px solid var(--line); border-radius: var(--r-md); padding: var(--s4); background: #fff; }
+.pair.is-merged { border-color: var(--violet); background: var(--mist); }
+.pair.is-kept { background: var(--paper); }
+.pair .reason { margin: 0 0 var(--s3); color: var(--slate); font-size: 0.9375rem; }
+.pair table { table-layout: fixed; font-size: 0.875rem; }
+.pair th, .pair td { white-space: normal; overflow-wrap: anywhere; padding: var(--s2) var(--s3); }
+.pair thead th:first-child { width: 30%; }
+.pair th { overflow-wrap: normal; }
+.pair td.diff { background: var(--changed-bg); font-weight: 650; }
+.pair .outcome { font-weight: 650; margin: var(--s3) 0 0; }
+.kind { display: inline-block; font-size: 0.875rem; font-weight: 700; padding: 0 var(--s2); border-radius: var(--r-pill); background: var(--lav); margin-left: var(--s2); vertical-align: 0.1em; }
+
+.req-text { font-size: 0.9375rem; }
+@media (min-width: 40.01rem) { .req-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } }
+@media (max-width: 40rem) {
+  .stack thead, .map-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .stack tr { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2) var(--s4); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--line); }
+  .stack tr:last-child { border-bottom: 0; }
+  .stack td { display: block; padding: 0; border: 0; overflow-wrap: anywhere; }
+  .stack td::before { content: attr(data-label); display: block; font-size: 0.875rem; font-weight: 650; color: var(--slate); }
+  .stack td:nth-child(n+5) { grid-column: 1 / -1; }
+  .stack td:nth-child(1), .stack td:nth-child(2) { font-weight: 750; }
+  .stack td:nth-child(1)::before { content: "Row "; display: inline; font: inherit; color: inherit; }
+  .stack td:nth-child(2)::before { display: none; }
+  .stack td.num { white-space: normal; }
+  .stack-wrap.scroll, .map-wrap.scroll { overflow-x: visible; }
+  .map-table tr { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--s1) var(--s4); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--line); }
+  .map-table tr:last-child { border-bottom: 0; }
+  .map-table th { grid-column: 1 / -1; background: none; padding: 0; border: 0; white-space: normal; }
+  .map-table td { padding: 0; border: 0; }
+  .map-table td:last-child { grid-column: 1 / -1; font-size: 0.875rem; color: var(--slate); overflow-wrap: anywhere; }
+  .map-table td:last-child::before { content: "First value: "; }
+  .map-table select { width: 100%; }
+}
+
+.biz { margin-block: var(--s8); }
+.biz-box { max-width: 44rem; padding: var(--s6); background: var(--mist); border-radius: var(--r-md); }
+.biz-box h2 { font-size: 1.35rem; margin-bottom: var(--s2); }
+.biz-box p:last-child { margin-bottom: 0; }
+footer { border-top: 1px solid var(--line); padding-block: var(--s6) var(--s12); font-size: 0.9375rem; color: var(--slate); }
+footer p { margin: 0 0 var(--s2); }
+
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+
+/* Demo 6 additions */
+.scroll { position: relative; }
+.intro-short { padding-bottom: 0; }
+.intro-short + .step { border-top: 0; padding-top: var(--s2); }
+.picks { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: var(--s3); margin: var(--s4) 0; max-width: 44rem; }
+@media (min-width: 52rem) { .picks { grid-template-columns: repeat(4, 1fr); } }
+.picks .btn { width: 100%; height: 100%; min-height: 3.5rem; padding: var(--s2) var(--s3); font-size: 0.9375rem; }
+.picks .btn[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.form-grid { display: grid; gap: 0 var(--s4); max-width: 44rem; }
+@media (min-width: 40rem) { .form-grid { grid-template-columns: 1fr 1fr; } .form-grid .span2 { grid-column: 1 / -1; } }
+.field { margin: 0 0 var(--s4); min-width: 0; }
+.field > label { display: block; font-weight: 700; margin-bottom: var(--s1); font-size: 0.9375rem; }
+.opt { font-weight: 500; color: var(--slate); }
+input[type="text"], input[type="tel"], input[type="email"], input[type="date"], select.full {
+  width: 100%; font: inherit; font-size: 1rem; min-height: 3rem; padding: var(--s2) var(--s3);
+  border: 1.5px solid var(--slate); border-radius: var(--r-md); background: #fff; color: var(--ink);
+}
+input[readonly] { background: var(--mist); }
+[aria-invalid="true"] { border-color: var(--error) !important; border-width: 2px !important; }
+.err { display: block; color: var(--error); font-weight: 650; font-size: 0.875rem; margin-top: var(--s1); }
+.err:empty { display: none; }
+.lines { list-style: none; margin: 0 0 var(--s4); padding: 0; display: grid; gap: var(--s3); max-width: 44rem; }
+.line-card { padding: var(--s4); border: 1.5px solid var(--line); border-radius: var(--r-md); background: #fff; }
+.line-card h4 { margin: 0 0 var(--s3); font-size: 1rem; }
+.line-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 var(--s3); align-items: end; }
+.line-grid .span2 { grid-column: 1 / -1; }
+.line-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2); }
+.line-total { font-weight: 800; font-variant-numeric: tabular-nums; }
+.undo { margin: 0 0 var(--s4); padding: var(--s3) var(--s4); border-radius: var(--r-md); background: var(--mist); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2); max-width: 44rem; }
+.undo p { margin: 0; }
+.error-summary { margin: 0 0 var(--s6); padding: var(--s4); border: 2px solid var(--error); border-radius: var(--r-md); background: var(--error-bg); max-width: 44rem; }
+.error-summary h3 { margin: 0 0 var(--s2); color: var(--error); font-size: 1.05rem; }
+.error-summary ul { margin: 0; padding-left: var(--s6); }
+.error-summary a { color: var(--error); font-weight: 650; }
+/* The quote document, on screen and on paper */
+.doc { max-width: 44rem; padding: var(--s6); background: #fff; border: 1.5px solid var(--line); border-radius: var(--r-md); color: var(--ink); }
+.doc-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s4); margin-bottom: var(--s6); }
+.doc-head h3 { margin: 0 0 var(--s1); font-size: 1.35rem; }
+.doc-head p { margin: 0; font-size: 0.9375rem; }
+.doc-meta { text-align: left; }
+.doc-meta p { margin: 0; font-size: 0.9375rem; }
+.doc-meta b { font-weight: 750; }
+.doc-to { margin: 0 0 var(--s4); font-size: 0.9375rem; }
+.doc-to b { display: block; font-size: 1rem; }
+.doc table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; margin-bottom: var(--s4); }
+.doc th, .doc td { text-align: left; padding: var(--s2) var(--s1); border-bottom: 1px solid var(--line); vertical-align: top; }
+.doc th { font-weight: 750; background: none; white-space: normal; }
+.doc .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.doc .desc { overflow-wrap: anywhere; }
+.totals { margin-left: auto; max-width: 20rem; }
+.totals div { display: flex; justify-content: space-between; gap: var(--s4); padding: var(--s1) 0; font-variant-numeric: tabular-nums; }
+.totals .grand { border-top: 2px solid var(--ink); margin-top: var(--s1); padding-top: var(--s2); font-weight: 850; font-size: 1.1rem; }
+.doc-terms { margin: var(--s6) 0 0; font-size: 0.875rem; color: var(--slate); }
+.doc-terms p { margin: 0 0 var(--s1); }
+.how { max-width: 44rem; margin-top: var(--s4); padding: var(--s4); background: var(--mist); border-radius: var(--r-md); }
+.how h3 { margin: 0 0 var(--s2); font-size: 1rem; }
+.how p { margin: 0 0 var(--s1); font-variant-numeric: tabular-nums; }
+.msg { width: 100%; max-width: 44rem; min-height: 8rem; font: inherit; font-size: 1rem; line-height: 1.5; padding: var(--s3); border: 1.5px solid var(--line); border-radius: var(--r-md); background: #fff; color: var(--ink); resize: vertical; }
+.done-note { font-weight: 650; }
+.mob-detail { display: none; }
+@media (max-width: 30rem) {
+  .doc { padding: var(--s4); }
+  .doc th:nth-child(2), .doc td:nth-child(2), .doc th:nth-child(3), .doc td:nth-child(3) { display: none; }
+  .mob-detail { display: block; font-size: 0.875rem; color: var(--slate); }
+}
+@media print {
+  @page { margin: 16mm; }
+  body { background: #fff !important; padding: 0 !important; font-size: 11pt; }
+  .topbar, footer, .intro, .biz, #step-pick, #step-edit, .no-print, .step-head { display: none !important; }
+  #step-doc { border: 0 !important; padding: 0 !important; }
+  .wrap { max-width: none !important; padding: 0 !important; }
+  .doc { border: 0; padding: 0; max-width: none; }
+  main, .step, #step-doc { margin: 0 !important; padding: 0 !important; }
+  .doc-head { margin-bottom: 12pt; }
+  .doc-to { margin-bottom: 8pt; }
+  .doc th, .doc td { padding: 4pt 2pt; }
+  .totals div { padding: 2pt 0; }
+  .doc-terms { margin-top: 12pt; }
+  .doc tr, .totals, .doc-terms { break-inside: avoid; }
+  .doc th:nth-child(2), .doc td:nth-child(2), .doc th:nth-child(3), .doc td:nth-child(3) { display: table-cell !important; }
+  .mob-detail { display: none !important; }
+  a { color: inherit; text-decoration: none; }
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <a class="wordmark" href="https://casimbahadar.github.io/"><span class="mark" aria-hidden="true"></span>Casim Bahadar</a>
+    <span class="demo-flag">Demo with made-up data</span>
+  </div>
+</header>
+
+<main id="main">
+  <div class="wrap intro intro-short">
+    <h1>Build a job quote</h1>
+    <p class="lede">Pick items from a price list and get a printable quote with 13% HST, a deposit and an expiry date.</p>
+  </div>
+
+  <section class="wrap step" id="step-pick" aria-labelledby="h-pick">
+    <div class="step-head"><span class="step-num" aria-hidden="true">1</span><h2 id="h-pick" tabindex="-1">Start a quote</h2></div>
+    <div class="picks" id="picks"></div>
+    <div class="privacy"><p><strong>Nothing leaves this page.</strong> Quotes are worked out in your browser and aren't saved anywhere, so print or download what you need before closing it. Cedar &amp; Copper Plumbing and its prices are made up.</p></div>
+  </section>
+
+  <section class="wrap step" id="step-edit" aria-labelledby="h-edit" hidden>
+    <div class="step-head"><span class="step-num" aria-hidden="true">2</span><h2 id="h-edit" tabindex="-1">Edit the quote</h2></div>
+    <div class="error-summary" id="error-summary" tabindex="-1" hidden><h3>Fix these before sending the quote</h3><ul id="error-list"></ul></div>
+    <div class="form-grid">
+      <div class="field"><label for="f-number">Quote number</label><input type="text" id="f-number" readonly></div>
+      <div class="field"><label for="f-date">Quote date</label><input type="date" id="f-date" aria-describedby="e-date"><span class="err" id="e-date"></span></div>
+      <div class="field"><label for="f-validDays">Valid for (days)</label><input type="text" id="f-validDays" inputmode="numeric" aria-describedby="e-validDays"><span class="err" id="e-validDays"></span></div>
+      <div class="field"><label for="f-job">The job</label><input type="text" id="f-job" aria-describedby="e-job"><span class="err" id="e-job"></span></div>
+      <div class="field"><label for="f-name">Customer name</label><input type="text" id="f-name" autocomplete="off" aria-describedby="e-name"><span class="err" id="e-name"></span></div>
+      <div class="field"><label for="f-phone">Phone <span class="opt">(optional)</span></label><input type="tel" id="f-phone" inputmode="tel" autocomplete="off"></div>
+      <div class="field"><label for="f-email">Email <span class="opt">(optional)</span></label><input type="email" id="f-email" autocomplete="off"></div>
+      <div class="field"><label for="f-address">Address <span class="opt">(optional)</span></label><input type="text" id="f-address" autocomplete="off"></div>
+    </div>
+    <h3 style="margin-top: var(--s4)">Line items</h3>
+    <ol class="lines" id="lines"></ol>
+    <span class="err" id="e-lines"></span>
+    <div class="undo" id="undo" hidden><p id="undo-text"></p><button class="btn btn-quiet" id="btn-undo" type="button">Undo</button></div>
+    <div class="actions" style="max-width: 44rem"><button class="btn btn-quiet" id="btn-add" type="button">Add a line item</button></div>
+    <div class="form-grid" style="margin-top: var(--s4)">
+      <div class="field"><label for="f-discount">Discount (%) <span class="opt">(optional)</span></label><input type="text" id="f-discount" inputmode="decimal" aria-describedby="e-discount"><span class="err" id="e-discount"></span></div>
+      <div class="field"><label for="f-scope">Discount applies to</label><select class="full" id="f-scope"><option value="all">The whole subtotal</option><option value="labour">Labour only</option></select></div>
+      <div class="field"><label for="f-deposit">Deposit (%) <span class="opt">(optional)</span></label><input type="text" id="f-deposit" inputmode="decimal" aria-describedby="e-deposit"><span class="err" id="e-deposit"></span></div>
+    </div>
+  </section>
+
+  <section class="wrap step" id="step-doc" aria-labelledby="h-doc" hidden>
+    <div class="step-head"><span class="step-num" aria-hidden="true">3</span><h2 id="h-doc" tabindex="-1">The quote</h2></div>
+    <article class="doc" id="doc" aria-label="Quote preview"></article>
+    <div class="how no-print" id="how"></div>
+    <div class="no-print">
+      <h3>Send it</h3>
+      <div class="actions">
+        <button class="btn btn-primary" id="btn-print" type="button">Print or save as PDF</button>
+        <button class="btn btn-quiet" id="btn-log" type="button">Download quote log row</button>
+      </div>
+      <p class="small muted" style="margin-top: 0">On an iPhone, saving as a PDF is Share, then Print, then Save to Files.</p>
+      <label class="block" for="msg">Message to send with the quote</label>
+      <textarea class="msg" id="msg" readonly></textarea>
+      <div class="actions"><button class="btn btn-quiet" id="btn-copy" type="button">Copy message</button></div>
+      <p class="small muted" id="copy-note" role="status"></p>
+      <h3>When the customer says yes</h3>
+      <p class="small">This turns the quote into a job row in the same 18 columns as the <a href="https://casimbahadar.github.io/job-intake/">job intake demo</a>.</p>
+      <div class="actions"><button class="btn btn-quiet" id="btn-accept" type="button">Mark as accepted and download the job row</button></div>
+      <p class="small done-note" id="accept-note" role="status"></p>
+    </div>
+  </section>
+
+  <aside class="wrap biz" aria-labelledby="h-biz">
+    <div class="biz-box">
+      <h2 id="h-biz">What this would look like for your business</h2>
+      <p>Your own price list, your terms and your logo on the quote. A version built for you could save every quote, send it by email from your own address, remind you when one is about to expire, and add accepted quotes straight to your job list or accounting software.</p>
+      <p><a href="https://casimbahadar.github.io/contact.html">Tell me how you quote today</a></p>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Built by Casim Bahadar, solutions developer in Kitchener-Waterloo, Ontario.</p>
+    <p><a href="https://casimbahadar.github.io/work.html">See more work</a> or <a href="https://casimbahadar.github.io/contact.html">get in touch</a>.</p>
+  </div>
+</footer>
+<p class="sr-only" id="announce" aria-live="polite"></p>
+<script>/* CORE-START: pure functions, no page access. Tests extract this block from the shipped index.html. */
+const Quote = (() => {
+  const COMPANY = { name: "Cedar & Copper Plumbing", phone: "519-555-0190", email: "office@example.com", city: "Kitchener-Waterloo, Ontario" };
+  const HST = 13;
+  const CATEGORIES = { labour: "Labour", service: "Flat-rate service", material: "Materials", fee: "Fee" };
+  // Made-up prices for a made-up company.
+  const PRICES = [
+    { code: "LAB-PL", desc: "Plumber labour", unit: "hour", category: "labour", price: 9500 },
+    { code: "LAB-AP", desc: "Apprentice labour", unit: "hour", category: "labour", price: 5500 },
+    { code: "SVC-DRAIN", desc: "Drain clearing, flat rate", unit: "each", category: "service", price: 18500 },
+    { code: "SVC-CAM", desc: "Drain camera inspection", unit: "each", category: "service", price: 15000 },
+    { code: "MAT-PTRAP", desc: "P-trap kit, 1 1/2 inch", unit: "each", category: "material", price: 1849 },
+    { code: "MAT-SUPPLY", desc: "Braided supply line", unit: "each", category: "material", price: 1235 },
+    { code: "MAT-FAUCET", desc: "Kitchen faucet", unit: "each", category: "material", price: 21900 },
+    { code: "MAT-WH50", desc: "50-gallon gas water heater", unit: "each", category: "material", price: 128900 },
+    { code: "MAT-VENT", desc: "Venting kit", unit: "each", category: "material", price: 8675 },
+    { code: "MAT-FIT", desc: "Copper fitting", unit: "each", category: "material", price: 435 },
+    { code: "FEE-DISP", desc: "Old unit disposal", unit: "each", category: "fee", price: 6000 },
+    { code: "FEE-TRIP", desc: "Trip fee", unit: "each", category: "fee", price: 4500 }
+  ];
+  const priceFor = code => PRICES.find(p => p.code === code);
+
+  // Numbers as people type them. Money becomes whole cents, quantities become thousandths.
+  function toCents(s) {
+    const v = String(s == null ? "" : s).trim().replace(/[\s$]/g, "").replace(/,(?=\d{3}(\D|$))/g, "");
+    if (!/^\d+(\.\d{1,2})?$/.test(v)) return null;
+    const [w, f = ""] = v.split(".");
+    return Number(w) * 100 + Number((f + "00").slice(0, 2));
+  }
+  function toMilli(s) {
+    const v = String(s == null ? "" : s).trim().replace(",", ".");
+    if (!/^\d+(\.\d{1,3})?$/.test(v)) return null;
+    const [w, f = ""] = v.split(".");
+    return Number(w) * 1000 + Number((f + "000").slice(0, 3));
+  }
+  function toPct(s) {
+    const v = String(s == null ? "" : s).trim().replace("%", "").replace(",", ".");
+    if (v === "") return 0;
+    if (!/^\d+(\.\d{1,2})?$/.test(v)) return null;
+    return Math.round(Number(v) * 100); // hundredths of a percent
+  }
+  // Half-up rounding on whole numbers: (a * b) / c, all integers.
+  const mulDiv = (a, b, c) => Math.floor((a * b * 2 + c) / (2 * c));
+  const money = c => (c < 0 ? "-$" : "$") + Math.floor(Math.abs(c) / 100).toLocaleString("en-CA") + "." + String(Math.abs(c) % 100).padStart(2, "0");
+  const plain = c => (c < 0 ? "-" : "") + Math.floor(Math.abs(c) / 100) + "." + String(Math.abs(c) % 100).padStart(2, "0");
+  const qtyText = m => (m % 1000 === 0 ? String(m / 1000) : String(m / 1000).replace(/0+$/, ""));
+  const pctText = p => (p % 100 === 0 ? String(p / 100) : String(p / 100)) + "%";
+
+  const dayNum = s => { const [y, m, d] = s.split("-").map(Number); return Date.UTC(y, m - 1, d) / 86400000; };
+  const addDays = (s, n) => new Date((dayNum(s) + n) * 86400000).toISOString().slice(0, 10);
+  const longDate = s => new Date(dayNum(s) * 86400000).toLocaleDateString("en-CA", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
+
+  // The whole quote, worked out in cents. HST is charged once, on the subtotal after any discount.
+  function compute(q) {
+    const lines = (q.lines || []).map(l => {
+      const qty = toMilli(l.qty), price = toCents(l.price);
+      const total = qty === null || price === null ? null : mulDiv(qty, price, 1000);
+      return { desc: String(l.desc || "").trim(), unit: l.unit || "each", category: l.category || "material", qty, price, total };
+    });
+    const ok = lines.filter(l => l.total !== null);
+    const subtotal = ok.reduce((s, l) => s + l.total, 0);
+    const labour = ok.filter(l => l.category === "labour").reduce((s, l) => s + l.total, 0);
+    const dPct = toPct(q.discountPct), depPct = toPct(q.depositPct);
+    const base = q.discountScope === "labour" ? labour : subtotal;
+    const discount = dPct === null ? 0 : mulDiv(base, dPct, 10000);
+    const taxable = subtotal - discount;
+    const hst = mulDiv(taxable, HST, 100);
+    const total = taxable + hst;
+    const deposit = depPct === null ? 0 : mulDiv(total, depPct, 10000);
+    return { lines, subtotal, labour, discountPct: dPct, discountBase: base, discount, taxable, hst, total, depositPct: depPct, deposit, balance: total - deposit,
+      validUntil: /^\d{4}-\d{2}-\d{2}$/.test(q.date || "") && Number.isInteger(Number(q.validDays)) ? addDays(q.date, Number(q.validDays)) : null };
+  }
+
+  // Problems a person must fix before the quote is sent. Keys point at fields.
+  function validate(q, today) {
+    const e = {};
+    if (!String(q.customer && q.customer.name || "").trim()) e.name = "Enter the customer's name.";
+    if (!String(q.job || "").trim()) e.job = "Describe the job in a few words.";
+    const lines = q.lines || [];
+    if (!lines.length) e.lines = "Add at least one line item.";
+    lines.forEach((l, i) => {
+      const qty = toMilli(l.qty), price = toCents(l.price);
+      if (!String(l.desc || "").trim()) e["desc-" + i] = "Describe this item.";
+      if (qty === null) e["qty-" + i] = "Enter a quantity, like 1 or 1.5.";
+      else if (qty === 0) e["qty-" + i] = "The quantity must be more than 0.";
+      else if (qty > 10000000) e["qty-" + i] = "That quantity is too large.";
+      if (price === null) e["price-" + i] = "Enter a price, like 45 or 45.00.";
+    });
+    const d = toPct(q.discountPct), dep = toPct(q.depositPct);
+    if (d === null || d > 10000) e.discount = "Enter a discount from 0 to 100%.";
+    if (dep === null || dep > 10000) e.deposit = "Enter a deposit from 0 to 100%.";
+    const days = Number(q.validDays);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(q.date || "")) e.date = "Choose the quote date.";
+    if (!Number.isInteger(days) || days < 1 || days > 365) e.validDays = "Enter a number of days from 1 to 365.";
+    else if (!e.date && today && dayNum(addDays(q.date, days)) < dayNum(today)) e.validDays = "This quote would already have expired. Change the date or the number of days.";
+    return e;
+  }
+
+  function message(q, c) {
+    const first = String(q.customer.name).trim().split(/\s+/)[0] || "there";
+    const dep = c.deposit > 0 ? " A deposit of " + money(c.deposit) + " (" + pctText(c.depositPct) + ") is due when you accept, and the balance of " + money(c.balance) + " when the work is done." : "";
+    return "Hi " + first + ", here's your quote " + q.number + " for " + String(q.job).trim().replace(/\.$/, "") + ". The total is " + money(c.total) + ", including 13% HST." + dep +
+      " The quote is valid until " + longDate(c.validUntil) + ". Reply to this message to accept it or to ask any questions. " + COMPANY.name + ", " + COMPANY.phone;
+  }
+
+  // Spreadsheet rows. Cells that start with = + - @ or a control character get an apostrophe so spreadsheets show text.
+  const cell = v => { let s = String(v == null ? "" : v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\r\n]|^\s|\s$/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const toCSV = (head, rows) => [head, ...rows].map(r => r.map(cell).join(",")).join("\r\n") + "\r\n";
+  const LOG_HEAD = ["Quote number", "Quote date", "Valid until", "Status", "Customer", "Phone", "Email", "Address", "Job", "Subtotal", "Discount", "HST", "Total", "Deposit", "Balance"];
+  function logRow(q, c, status) {
+    return [q.number, q.date, c.validUntil, status || "Sent", q.customer.name, q.customer.phone, q.customer.email, q.customer.address, q.job,
+      plain(c.subtotal), plain(c.discount), plain(c.hst), plain(c.total), plain(c.deposit), plain(c.balance)];
+  }
+  // The same 18 columns as the job intake demo, so an accepted quote drops straight into the job list.
+  const JOB_HEAD = ["Job number", "Received", "Status", "Priority", "Priority rule", "Request type", "Name", "Phone", "Email", "Street address", "City", "Postal code", "Preferred date", "Time of day", "Visit start", "Visit end", "Description", "Checklist done"];
+  function jobRow(q, c, acceptedOn) {
+    const desc = q.job + ". Quote " + q.number + " accepted, total " + money(c.total) + (c.deposit > 0 ? ", deposit " + money(c.deposit) : "") + ".";
+    return [q.number, acceptedOn, "New", "", "Accepted quote", q.job, q.customer.name, q.customer.phone, q.customer.email, q.customer.address, "", "", "", "", "", "", desc, ""];
+  }
+
+  function line(code, qty) { const p = priceFor(code); return { code, desc: p.desc, unit: p.unit, category: p.category, qty: String(qty), price: plain(p.price) }; }
+  // Sample quotes. Expected totals were worked out by hand and are checked by the tests.
+  function samples(today) {
+    const cust = (name, phone, email, address) => ({ name, phone, email, address });
+    return [
+      { id: "drain", title: "Drain clearing", number: "CC-Q-1041", date: today, validDays: "30", job: "Clear the blocked kitchen drain",
+        customer: cust("Priya Raman", "519-555-0141", "priya.raman@example.org", "24 Erb St W, Waterloo"), discountPct: "", discountScope: "all", depositPct: "",
+        lines: [line("LAB-PL", "1.5"), line("SVC-DRAIN", 1), line("MAT-PTRAP", 1), line("FEE-TRIP", 1)] },
+      { id: "faucet", title: "Faucet install", number: "CC-Q-1042", date: today, validDays: "30", job: "Install a new kitchen faucet",
+        customer: cust("Grace Liu", "519-555-0143", "grace.liu@example.net", "12 Queen St S, Kitchener"), discountPct: "10", discountScope: "labour", depositPct: "25",
+        lines: [line("LAB-PL", 2), line("LAB-AP", 2), line("MAT-FAUCET", 1), line("MAT-SUPPLY", 2), line("FEE-TRIP", 1)] },
+      { id: "heater", title: "Water heater replacement", number: "CC-Q-1043", date: today, validDays: "30", job: "Replace the 50-gallon gas water heater",
+        customer: cust("Omar Haddad", "519-555-0144", "", "17 King St W, Kitchener"), discountPct: "", discountScope: "all", depositPct: "50",
+        lines: [line("MAT-WH50", 1), line("MAT-VENT", 1), line("MAT-FIT", 3), line("LAB-PL", 4), line("LAB-AP", 4), line("FEE-DISP", 1), line("FEE-TRIP", 1)] }
+    ];
+  }
+
+  return { COMPANY, HST, CATEGORIES, PRICES, priceFor, toCents, toMilli, toPct, mulDiv, money, plain, qtyText, pctText, addDays, longDate, compute, validate, message, toCSV, LOG_HEAD, logRow, JOB_HEAD, jobRow, samples, line };
+})();
+/* CORE-END */
+
+(() => {
+  const $ = id => document.getElementById(id);
+  function h(tag, attrs, ...kids) {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (v === null || v === undefined || v === false) continue;
+      if (k === "text") el.textContent = v; else if (k === "class") el.className = v; else el.setAttribute(k, v === true ? "" : String(v));
+    }
+    for (const kid of kids.flat()) if (kid !== null && kid !== undefined && kid !== false) el.append(typeof kid === "string" ? document.createTextNode(kid) : kid);
+    return el;
+  }
+  const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  const announce = t => { $("announce").textContent = ""; setTimeout(() => { $("announce").textContent = t; }, 30); };
+  let q = null, seq = 0, nextNumber = 1044, tried = false, removed = null;
+  const withId = l => Object.assign({ id: "l" + (++seq) }, l);
+
+  // ---- step 1: pick a quote
+  const SAMPLES = Quote.samples(today());
+  $("picks").append(...SAMPLES.map(s => h("button", { class: "btn btn-quiet", type: "button", "data-pick": s.id, "aria-pressed": "false", text: s.title })),
+    h("button", { class: "btn btn-quiet", type: "button", "data-pick": "blank", "aria-pressed": "false", text: "Start a blank quote" }));
+  $("picks").addEventListener("click", e => {
+    const b = e.target.closest("[data-pick]");
+    if (!b) return;
+    const id = b.dataset.pick;
+    document.querySelectorAll("[data-pick]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    const src = id === "blank"
+      ? { number: "CC-Q-" + (nextNumber++), date: today(), validDays: "30", job: "", customer: { name: "", phone: "", email: "", address: "" }, discountPct: "", discountScope: "all", depositPct: "", lines: [Quote.line("LAB-PL", 1)] }
+      : JSON.parse(JSON.stringify(Quote.samples(today()).find(s => s.id === id)));
+    q = Object.assign(src, { lines: src.lines.map(withId) });
+    tried = false; removed = null; $("undo").hidden = true; $("error-summary").hidden = true;
+    fillForm(); renderLines(); update();
+    $("step-edit").hidden = false; $("step-doc").hidden = false;
+    $("accept-note").textContent = ""; $("copy-note").textContent = "";
+    const target = id === "blank" ? $("h-edit") : $("h-doc");
+    target.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    target.focus({ preventScroll: true });
+  });
+
+  // ---- step 2: the form
+  const TOP = { number: "f-number", date: "f-date", validDays: "f-validDays", job: "f-job", discountPct: "f-discount", discountScope: "f-scope", depositPct: "f-deposit" };
+  const CUST = { name: "f-name", phone: "f-phone", email: "f-email", address: "f-address" };
+  function fillForm() {
+    for (const [k, id] of Object.entries(TOP)) $(id).value = q[k];
+    for (const [k, id] of Object.entries(CUST)) $(id).value = q.customer[k];
+  }
+  for (const [k, id] of Object.entries(TOP)) $(id).addEventListener("input", () => { q[k] = $(id).value; update(); });
+  $("f-scope").addEventListener("change", () => { q.discountScope = $("f-scope").value; update(); });
+  for (const [k, id] of Object.entries(CUST)) $(id).addEventListener("input", () => { q.customer[k] = $(id).value; update(); });
+
+  const itemOptions = () => [h("option", { value: "custom", text: "Custom item" }), ...Quote.PRICES.map(p => h("option", { value: p.code, text: p.desc + " (" + Quote.money(p.price) + " per " + p.unit + ")" }))];
+  function lineCard(l, i) {
+    const f = (key, label, mode) => h("div", { class: "field" }, h("label", { for: key + "-" + l.id, text: label }),
+      h("input", { type: "text", id: key + "-" + l.id, "data-line": l.id, "data-key": key, inputmode: mode || null, autocomplete: "off", "aria-describedby": "e" + key + "-" + l.id }), h("span", { class: "err", id: "e" + key + "-" + l.id }));
+    const item = h("select", { class: "full", id: "code-" + l.id, "data-line": l.id, "data-key": "code" }, ...itemOptions());
+    const cat = h("select", { class: "full", id: "category-" + l.id, "data-line": l.id, "data-key": "category" }, ...Object.entries(Quote.CATEGORIES).map(([k, v]) => h("option", { value: k, text: v })));
+    const card = h("li", { class: "line-card", id: "card-" + l.id },
+      h("h4", { text: "Item " + (i + 1) }),
+      h("div", { class: "line-grid" },
+        h("div", { class: "field span2" }, h("label", { for: "code-" + l.id, text: "From the price list" }), item),
+        h("div", { class: "span2" }, f("desc", "Description")),
+        f("qty", l.unit === "hour" ? "Hours" : "Quantity", "decimal"),
+        f("price", "Price per " + (l.unit || "each") + " ($)", "decimal"),
+        h("div", { class: "field span2", hidden: l.code === "custom" ? null : true }, h("label", { for: "category-" + l.id, text: "Kind of item" }), cat)),
+      h("div", { class: "line-foot" }, h("span", {}, "Line total ", h("span", { class: "line-total", id: "total-" + l.id })),
+        h("button", { class: "btn btn-quiet", type: "button", "data-remove": l.id, text: "Remove item " + (i + 1) })));
+    item.value = l.code; cat.value = l.category;
+    card.querySelector("#desc-" + l.id).value = l.desc; card.querySelector("#qty-" + l.id).value = l.qty; card.querySelector("#price-" + l.id).value = l.price;
+    return card;
+  }
+  function renderLines() { $("lines").replaceChildren(...q.lines.map(lineCard)); }
+  $("lines").addEventListener("input", e => {
+    const el = e.target, l = q.lines.find(x => x.id === el.dataset.line);
+    if (!l || el.dataset.key === "code") return;
+    l[el.dataset.key] = el.value; update();
+  });
+  $("lines").addEventListener("change", e => {
+    const el = e.target, l = q.lines.find(x => x.id === el.dataset.line);
+    if (!l) return;
+    if (el.dataset.key === "code") {
+      const p = Quote.priceFor(el.value);
+      if (p) Object.assign(l, { code: p.code, desc: p.desc, unit: p.unit, category: p.category, price: Quote.plain(p.price) });
+      else Object.assign(l, { code: "custom", desc: "", unit: "each", category: "material", price: "" });
+      const i = q.lines.indexOf(l);
+      $("card-" + l.id).replaceWith(lineCard(l, i));
+      $("code-" + l.id).focus();
+    } else if (el.dataset.key === "category") l.category = el.value;
+    update();
+  });
+  $("lines").addEventListener("click", e => {
+    const b = e.target.closest("[data-remove]");
+    if (!b) return;
+    const i = q.lines.findIndex(x => x.id === b.dataset.remove);
+    removed = { line: q.lines[i], index: i };
+    q.lines.splice(i, 1);
+    renderLines(); update();
+    $("undo-text").textContent = "Removed " + (removed.line.desc || "item " + (i + 1)) + ".";
+    $("undo").hidden = false; $("btn-undo").focus();
+  });
+  $("btn-undo").addEventListener("click", () => {
+    if (!removed) return;
+    q.lines.splice(removed.index, 0, removed.line);
+    const id = removed.line.id; removed = null; $("undo").hidden = true;
+    renderLines(); update(); $("code-" + id).focus();
+  });
+  $("btn-add").addEventListener("click", () => {
+    const l = withId({ code: "custom", desc: "", unit: "each", category: "material", qty: "1", price: "" });
+    q.lines.push(l);
+    $("lines").append(lineCard(l, q.lines.length - 1));
+    update(); $("desc-" + l.id).focus();
+  });
+
+  // ---- errors: shown once the person tries to print or download, then updated as they fix things
+  const FIELD = { name: "f-name", job: "f-job", date: "f-date", validDays: "f-validDays", discount: "f-discount", deposit: "f-deposit" };
+  function showErrors(errs) {
+    for (const [k, id] of Object.entries(FIELD)) {
+      const msg = tried ? errs[k] || "" : "";
+      $("e-" + id.slice(2)).textContent = msg;
+      if (msg) $(id).setAttribute("aria-invalid", "true"); else $(id).removeAttribute("aria-invalid");
+    }
+    $("e-lines").textContent = tried ? errs.lines || "" : "";
+    q.lines.forEach((l, i) => {
+      for (const key of ["desc", "qty", "price"]) {
+        const msg = tried ? errs[key + "-" + i] || "" : "", el = $(key + "-" + l.id);
+        if (!el) continue;
+        $("e" + key + "-" + l.id).textContent = msg;
+        if (msg) el.setAttribute("aria-invalid", "true"); else el.removeAttribute("aria-invalid");
+      }
+    });
+    if (tried) {
+      const keys = Object.keys(errs);
+      $("error-summary").hidden = !keys.length;
+      $("error-list").replaceChildren(...keys.map(k => {
+        const m = /^(desc|qty|price)-(\d+)$/.exec(k);
+        const target = m ? m[1] + "-" + q.lines[Number(m[2])].id : FIELD[k] || "btn-add";
+        return h("li", {}, h("a", { href: "#" + target, "data-focus": target, text: (m ? "Item " + (Number(m[2]) + 1) + ": " : "") + errs[k] }));
+      }));
+    }
+  }
+  $("error-list").addEventListener("click", e => { const a = e.target.closest("[data-focus]"); if (a) { e.preventDefault(); $(a.dataset.focus).focus(); } });
+  function ready() {
+    const errs = Quote.validate(q, today());
+    tried = true; showErrors(errs);
+    if (Object.keys(errs).length) { $("error-summary").hidden = false; $("error-summary").focus(); $("error-summary").scrollIntoView({ block: "start" }); return null; }
+    return Quote.compute(q);
+  }
+
+  // ---- step 3: the quote, rebuilt on every change
+  function update() {
+    const c = Quote.compute(q), errs = Quote.validate(q, today());
+    showErrors(errs);
+    c.lines.forEach((l, i) => { const t = $("total-" + q.lines[i].id); if (t) t.textContent = l.total === null ? "not worked out yet" : Quote.money(l.total); });
+    const C = Quote.COMPANY;
+    const rows = c.lines.map(l => h("tr", {}, h("td", { class: "desc" }, l.desc || "Item without a description",
+        l.qty !== null && l.price !== null ? h("span", { class: "mob-detail", text: Quote.qtyText(l.qty) + (l.unit === "hour" ? " h" : "") + " at " + Quote.money(l.price) }) : null),
+      h("td", { class: "num", text: l.qty === null ? "" : Quote.qtyText(l.qty) + (l.unit === "hour" ? " h" : "") }),
+      h("td", { class: "num", text: l.price === null ? "" : Quote.money(l.price) }),
+      h("td", { class: "num", text: l.total === null ? "" : Quote.money(l.total) })));
+    const tot = [["Subtotal", c.subtotal]];
+    if (c.discount > 0) tot.push(["Discount, " + Quote.pctText(c.discountPct) + (q.discountScope === "labour" ? " off labour" : ""), -c.discount]);
+    tot.push(["HST 13%", c.hst]);
+    const totals = h("div", { class: "totals" }, ...tot.map(([k, v]) => h("div", {}, h("span", { text: k }), h("span", { text: Quote.money(v) }))),
+      h("div", { class: "grand" }, h("span", { text: "Total" }), h("span", { text: Quote.money(c.total) })),
+      c.deposit > 0 ? h("div", {}, h("span", { text: "Deposit due on acceptance (" + Quote.pctText(c.depositPct) + ")" }), h("span", { text: Quote.money(c.deposit) })) : null,
+      c.deposit > 0 ? h("div", {}, h("span", { text: "Balance due when the work is done" }), h("span", { text: Quote.money(c.balance) })) : null);
+    const cust = q.customer;
+    $("doc").replaceChildren(
+      h("div", { class: "doc-head" },
+        h("div", {}, h("h3", { text: C.name }), h("p", { text: C.city }), h("p", { text: C.phone + ", " + C.email })),
+        h("div", { class: "doc-meta" }, h("p", {}, h("b", { text: "Quote " + q.number })), h("p", { text: "Date: " + (/^\d{4}-\d{2}-\d{2}$/.test(q.date) ? Quote.longDate(q.date) : "not set") }),
+          h("p", { text: "Valid until: " + (c.validUntil ? Quote.longDate(c.validUntil) : "not set") }))),
+      h("p", { class: "doc-to" }, h("b", { text: cust.name || "Customer name" }), [cust.address, cust.phone, cust.email].filter(Boolean).join(", ")),
+      h("p", { class: "doc-to" }, h("b", { text: "For: " + (q.job || "the job") })),
+      h("table", {}, h("thead", {}, h("tr", {}, h("th", { scope: "col", text: "Item" }), h("th", { scope: "col", class: "num", text: "Qty" }), h("th", { scope: "col", class: "num", text: "Price" }), h("th", { scope: "col", class: "num", text: "Amount" }))), h("tbody", {}, ...rows)),
+      totals,
+      h("div", { class: "doc-terms" },
+        h("p", { text: "Prices are in Canadian dollars and include the parts and labour listed. A real quote would show the company's HST registration number here." }),
+        h("p", { text: c.validUntil ? "This quote is valid until " + Quote.longDate(c.validUntil) + "." : "" }),
+        c.deposit > 0 ? h("p", { text: "A deposit of " + Quote.money(c.deposit) + " is due when you accept. The balance of " + Quote.money(c.balance) + " is due when the work is done." } ) : h("p", { text: "Payment is due when the work is done." }),
+        h("p", { text: "This is a demo quote from a made-up company." })));
+    const how = [h("h3", { text: "How the totals are worked out" }),
+      h("p", { text: "Subtotal: the line amounts add up to " + Quote.money(c.subtotal) + "." })];
+    if (c.discount > 0) how.push(h("p", { text: "Discount: " + Quote.pctText(c.discountPct) + " of " + Quote.money(c.discountBase) + (q.discountScope === "labour" ? " in labour" : "") + " = " + Quote.money(c.discount) + ", leaving " + Quote.money(c.taxable) + "." }));
+    how.push(h("p", { text: "HST: 13% of " + Quote.money(c.taxable) + " = " + Quote.money(c.hst) + ", worked out once on the subtotal" + (c.discount > 0 ? " after the discount" : "") + " and rounded to the nearest cent." }),
+      h("p", { text: "Total: " + Quote.money(c.taxable) + " + " + Quote.money(c.hst) + " = " + Quote.money(c.total) + "." }));
+    if (c.deposit > 0) how.push(h("p", { text: "Deposit: " + Quote.pctText(c.depositPct) + " of " + Quote.money(c.total) + " = " + Quote.money(c.deposit) + ". Balance: " + Quote.money(c.balance) + "." }));
+    $("how").replaceChildren(...how);
+    const m = $("msg");
+    m.value = c.validUntil && q.customer.name.trim() && q.job.trim() ? Quote.message(q, c) : "Fill in the customer's name and the job, and the message appears here.";
+    const y = window.scrollY; m.style.height = "auto"; m.style.height = (m.scrollHeight + 4) + "px"; if (window.scrollY !== y) window.scrollTo(0, y);
+  }
+
+  // ---- actions
+  function download(name, text) {
+    const blob = new Blob(["\uFEFF" + text], { type: "text/csv;charset=utf-8" }), url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+  $("btn-print").addEventListener("click", () => { if (ready()) window.print(); });
+  $("btn-log").addEventListener("click", () => { const c = ready(); if (c) download(q.number + "-log.csv", Quote.toCSV(Quote.LOG_HEAD, [Quote.logRow(q, c, "Sent")])); });
+  $("btn-accept").addEventListener("click", () => {
+    const c = ready(); if (!c) return;
+    download(q.number + "-job.csv", Quote.toCSV(Quote.JOB_HEAD, [Quote.jobRow(q, c, today())]));
+    $("accept-note").textContent = "Quote " + q.number + " marked as accepted. The job row downloaded.";
+  });
+  $("btn-copy").addEventListener("click", async () => {
+    if (!ready()) return;
+    try { await Promise.race([navigator.clipboard.writeText($("msg").value), new Promise((_, no) => setTimeout(() => no(new Error("timeout")), 1500))]); $("copy-note").textContent = "Copied."; }
+    catch (e) { $("msg").focus(); $("msg").select(); $("copy-note").textContent = "Copying isn't allowed here. The message is selected, so you can copy it yourself."; }
+  });
+})();
+</script>
+</body>
+</html>
