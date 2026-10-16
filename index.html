@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-aFpzoT+QYqAiekFeMM6PHI2VsHh/CilmcaMIOAUKrlQ='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-a707Jd2U5XV6RpyrVXTzyMiduZDJRzquK7IYSF5rzL8='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Job quote builder demo | Casim Bahadar</title>
@@ -267,6 +267,9 @@ input[readonly] { background: var(--mist); }
   .mob-detail { display: none !important; }
   a { color: inherit; text-decoration: none; }
 }
+
+.restored { max-width: 44rem; margin-top: var(--s4); padding: var(--s3) var(--s4); border-radius: var(--r-md); background: var(--mist); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2); }
+.restored p { margin: 0; font-weight: 650; }
 </style>
 </head>
 <body>
@@ -286,7 +289,8 @@ input[readonly] { background: var(--mist); }
   <section class="wrap step" id="step-pick" aria-labelledby="h-pick">
     <div class="step-head"><span class="step-num" aria-hidden="true">1</span><h2 id="h-pick" tabindex="-1">Start a quote</h2></div>
     <div class="picks" id="picks"></div>
-    <div class="privacy"><p><strong>Nothing leaves this page.</strong> Quotes are worked out in your browser and aren't saved anywhere, so print or download what you need before closing it. Cedar &amp; Copper Plumbing and its prices are made up.</p></div>
+    <div class="privacy"><p><strong>Nothing leaves this page.</strong> Quotes are worked out in your browser. The quote you're working on stays in this browser tab, so a reload doesn't lose it. Closing the tab clears it, so print or download what you need first. Cedar &amp; Copper Plumbing and its prices are made up.</p></div>
+    <div class="restored" id="restored" role="status" hidden><p>Your quote from earlier in this tab is back.</p><button class="btn btn-quiet" id="btn-fresh" type="button">Start over</button></div>
   </section>
 
   <section class="wrap step" id="step-edit" aria-labelledby="h-edit" hidden>
@@ -522,7 +526,7 @@ const Quote = (() => {
       ? { number: "CC-Q-" + (nextNumber++), date: today(), validDays: "30", job: "", customer: { name: "", phone: "", email: "", address: "" }, discountPct: "", discountScope: "all", depositPct: "", lines: [Quote.line("LAB-PL", 1)] }
       : JSON.parse(JSON.stringify(Quote.samples(today()).find(s => s.id === id)));
     q = Object.assign(src, { lines: src.lines.map(withId) });
-    tried = false; removed = null; $("undo").hidden = true; $("error-summary").hidden = true;
+    tried = false; removed = null; $("undo").hidden = true; $("error-summary").hidden = true; $("restored").hidden = true;
     fillForm(); renderLines(); update();
     $("step-edit").hidden = false; $("step-doc").hidden = false;
     $("accept-note").textContent = ""; $("copy-note").textContent = "";
@@ -682,6 +686,28 @@ const Quote = (() => {
     const m = $("msg");
     m.value = c.validUntil && q.customer.name.trim() && q.job.trim() ? Quote.message(q, c) : "Fill in the customer's name and the job, and the message appears here.";
     const y = window.scrollY; m.style.height = "auto"; m.style.height = (m.scrollHeight + 4) + "px"; if (window.scrollY !== y) window.scrollTo(0, y);
+    save();
+  }
+
+  // The quote being worked on is kept in this browser tab only (sessionStorage), so a reload doesn't lose it.
+  // Closing the tab clears it. If the browser blocks storage, the page works as before.
+  const KEY = "quote-builder:v1";
+  function save() {
+    try { sessionStorage.setItem(KEY, JSON.stringify({ q: Object.assign({}, q, { lines: q.lines.map(({ id, ...rest }) => rest) }), nextNumber })); } catch (e) { /* storage unavailable */ }
+  }
+  function restore() {
+    let d;
+    try { d = JSON.parse(sessionStorage.getItem(KEY) || "null"); } catch (e) { return false; }
+    if (!d || !d.q || typeof d.q !== "object" || !Array.isArray(d.q.lines)) return false;
+    const str = v => typeof v === "string" ? v.slice(0, 500) : "";
+    const src = d.q, c = src.customer && typeof src.customer === "object" ? src.customer : {};
+    q = { number: str(src.number) || "CC-Q-" + (nextNumber++), date: str(src.date), validDays: str(src.validDays), job: str(src.job),
+      customer: { name: str(c.name), phone: str(c.phone), email: str(c.email), address: str(c.address) },
+      discountPct: str(src.discountPct), discountScope: src.discountScope === "labour" ? "labour" : "all", depositPct: str(src.depositPct),
+      lines: src.lines.slice(0, 5000).filter(l => l && typeof l === "object").map(l => withId({ code: str(l.code) || "custom", desc: str(l.desc), unit: l.unit === "hour" ? "hour" : "each",
+        category: Object.keys(Quote.CATEGORIES).includes(l.category) ? l.category : "material", qty: str(l.qty), price: str(l.price) })) };
+    if (Number.isInteger(d.nextNumber) && d.nextNumber > nextNumber) nextNumber = d.nextNumber;
+    return true;
   }
 
   // ---- actions
@@ -696,6 +722,17 @@ const Quote = (() => {
     download(q.number + "-job.csv", Quote.toCSV(Quote.JOB_HEAD, [Quote.jobRow(q, c, today())]));
     $("accept-note").textContent = "Quote " + q.number + " marked as accepted. The job row downloaded.";
   });
+  $("btn-fresh").addEventListener("click", () => {
+    try { sessionStorage.removeItem(KEY); } catch (e) { /* storage unavailable */ }
+    q = null; tried = false; removed = null;
+    $("restored").hidden = true; $("step-edit").hidden = true; $("step-doc").hidden = true;
+    document.querySelectorAll("[data-pick]").forEach(x => x.setAttribute("aria-pressed", "false"));
+    $("h-pick").scrollIntoView({ block: "start" }); $("h-pick").focus({ preventScroll: true });
+  });
+  if (restore()) {
+    fillForm(); renderLines(); update();
+    $("step-edit").hidden = false; $("step-doc").hidden = false; $("restored").hidden = false;
+  }
   $("btn-copy").addEventListener("click", async () => {
     if (!ready()) return;
     try { await Promise.race([navigator.clipboard.writeText($("msg").value), new Promise((_, no) => setTimeout(() => no(new Error("timeout")), 1500))]); $("copy-note").textContent = "Copied."; }

@@ -46,7 +46,7 @@ These were worked out by hand before the page was built, and the tests check the
 
 ## Privacy
 
-Nothing leaves the page. Its security settings block every network request, quotes aren't saved anywhere, and anything typed in is shown as plain text, never run as code.
+Nothing leaves the page. Its security settings block every network request, and anything typed in is shown as plain text, never run as code. The quote being worked on is kept in this browser tab only (sessionStorage), so a reload doesn't lose it, and closing the tab clears it. A note says when an earlier quote has been brought back, with a Start over button.
 
 ## Files
 
